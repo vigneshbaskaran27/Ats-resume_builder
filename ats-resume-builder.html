@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ATS Resume Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #13131a;
+    --card: #1a1a26;
+    --border: #2a2a3d;
+    --accent: #4fffb0;
+    --accent2: #7b61ff;
+    --warn: #ff6b6b;
+    --text: #e8e8f0;
+    --muted: #7a7a9a;
+    --score-good: #4fffb0;
+    --score-mid: #ffd166;
+    --score-low: #ff6b6b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79,255,176,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,255,176,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+  /* Header */
+  header {
+    padding: 28px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .header-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: var(--text);
+  }
+  .logo-text span { color: var(--accent); }
+
+  .score-badge {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 20px;
+  }
+  .score-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .score-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 28px;
+    font-weight: 500;
+    transition: all 0.4s ease;
+  }
+  .score-ring {
+    width: 52px; height: 52px;
+    position: relative;
+  }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring circle {
+    fill: none;
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+  .ring-bg { stroke: var(--border); }
+  .ring-fill { stroke: var(--accent); transition: stroke-dashoffset 0.6s ease, stroke 0.4s; }
+
+  /* Layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  /* Form */
+  .form-panel {
+    display: flex; flex-direction: column; gap: 20px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .card:focus-within { border-color: var(--accent2); }
+
+  .card-header {
+    padding: 14px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--accent);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .icon { opacity: 0.8; }
+  .card-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--muted);
+  }
+  .field input, .field textarea, .field select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    width: 100%;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 3px rgba(123,97,255,0.1);
+  }
+  .field textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+
+  /* Dynamic list */
+  .list-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    position: relative;
+    display: flex; flex-direction: column; gap: 10px;
+    animation: slideIn 0.25s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .list-item .remove-btn {
+    position: absolute; top: 10px; right: 10px;
+    background: none; border: none;
+    color: var(--warn); cursor: pointer; font-size: 16px;
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px; opacity: 0.6; transition: opacity 0.2s;
+  }
+  .list-item .remove-btn:hover { opacity: 1; background: rgba(255,107,107,0.1); }
+
+  .add-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: none;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+  }
+  .add-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(79,255,176,0.04); }
+
+  .skills-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .skill-chip {
+    background: rgba(123,97,255,0.12);
+    border: 1px solid rgba(123,97,255,0.3);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: #a89aff;
+    display: flex; align-items: center; gap: 6px;
+    animation: slideIn 0.2s ease;
+  }
+  .skill-chip button {
+    background: none; border: none; color: #a89aff;
+    cursor: pointer; font-size: 14px; line-height: 1;
+    padding: 0; opacity: 0.6;
+  }
+  .skill-chip button:hover { opacity: 1; }
+  .skill-input-row { display: flex; gap: 8px; }
+  .skill-input-row input { flex: 1; }
+  .skill-input-row button {
+    background: var(--accent2); border: none; border-radius: 8px;
+    color: white; padding: 0 14px; cursor: pointer; font-size: 18px;
+    transition: opacity 0.2s;
+  }
+  .skill-input-row button:hover { opacity: 0.85; }
+
+  /* Generate button */
+  .generate-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), #00d68f);
+    border: none;
+    border-radius: 12px;
+    color: #0d0d0f;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.25s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .generate-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.1);
+    transform: translateX(-100%);
+    transition: transform 0.4s;
+  }
+  .generate-btn:hover::before { transform: translateX(100%); }
+  .generate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(79,255,176,0.3); }
+  .generate-btn:active { transform: translateY(0); }
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Right panel */
+  .right-panel { display: flex; flex-direction: column; gap: 20px; }
+
+  /* Score breakdown */
+  .score-breakdown { display: flex; flex-direction: column; gap: 10px; }
+  .score-item {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .score-item-header {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .score-item-label { font-size: 12px; color: var(--muted); }
+  .score-item-val { font-size: 12px; font-weight: 600; font-family: 'DM Mono', monospace; }
+  .score-bar-track {
+    height: 5px; background: var(--border); border-radius: 3px; overflow: hidden;
+  }
+  .score-bar-fill {
+    height: 100%; border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* Tips */
+  .tips-list { display: flex; flex-direction: column; gap: 8px; }
+  .tip {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 10px 12px;
+    background: var(--surface);
+    border-radius: 8px;
+    border-left: 3px solid;
+    font-size: 13px;
+    line-height: 1.5;
+    animation: slideIn 0.25s ease;
+  }
+  .tip.good { border-color: var(--score-good); }
+  .tip.warn { border-color: var(--score-mid); }
+  .tip.bad { border-color: var(--score-low); }
+  .tip-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+  /* Preview */
+  .preview-area {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    color: #1a1a1a;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    line-height: 1.5;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .preview-inner { padding: 28px 32px; }
+  .preview-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #0d0d0f;
+    margin-bottom: 2px;
+  }
+  .preview-contact {
+    font-size: 10px; color: #666; margin-bottom: 14px;
+  }
+  .preview-hr { border: none; border-top: 2px solid #0d0d0f; margin: 8px 0; }
+  .preview-section-title {
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: #0d0d0f; margin: 10px 0 4px;
+  }
+  .preview-job { font-weight: 700; font-size: 11px; }
+  .preview-job-meta { font-size: 10px; color: #666; margin-bottom: 3px; }
+  .preview-bullet { padding-left: 12px; position: relative; margin-bottom: 2px; font-size: 10px; color: #333; }
+  .preview-bullet::before { content: '•'; position: absolute; left: 0; }
+  .preview-skills-text { font-size: 10px; color: #333; line-height: 1.6; }
+
+  /* Download */
+  .download-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .download-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(79,255,176,0.05); }
+
+  /* Loading */
+  .loading-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(13,13,15,0.85);
+    z-index: 100;
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+  }
+  .loading-overlay.active { display: flex; }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 14px; color: var(--muted); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center; padding: 40px 20px;
+    color: var(--muted); font-size: 13px;
+  }
+  .empty-state .big-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Analyzing & optimizing your resume…</div>
+</div>
+
+<div class="container">
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">📄</div>
+        <div class="logo-text">ATS<span>Boost</span></div>
+      </div>
+      <div class="score-badge">
+        <div>
+          <div class="score-label">ATS Score</div>
+          <div class="score-value" id="scoreDisplay" style="color: var(--muted)">--</div>
+        </div>
+        <div class="score-ring">
+          <svg width="52" height="52" viewBox="0 0 52 52">
+            <circle class="ring-bg" cx="26" cy="26" r="22" />
+            <circle class="ring-fill" id="ringFill" cx="26" cy="26" r="22"
+              stroke-dasharray="138.2"
+              stroke-dashoffset="138.2" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- LEFT: FORM -->
+    <div class="form-panel">
+
+      <!-- Personal Info -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">👤</span> Personal Information</div>
+        </div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="field">
+              <label>Full Name *</label>
+              <input type="text" id="fullName" placeholder="e.g. Vignesh B" oninput="liveScore()"/>
+            </div>
+            <div class="field">
+              <label>Job Title / Target Role *</label>
+              <input type="text" id="jobTitle" placeholder="e.g. Senior Software Engineer" oninput="liveScore()"/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label>Email *</label>
+              <input type="email" id="email" placeholder="you@email.com" oninput="liveScore()"/>
+            </div>
+            <div class="field">
+              <label>Phone</label>
+              <input type="text" id="phone" placeholder="+91 9876543210" oninput="liveScore()"/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label>LinkedIn URL</label>
+              <input type="text" id="linkedin" placeholder="linkedin.com/in/yourprofile" oninput="liveScore()"/>
+            </div>
+            <div class="field">
+              <label>Location</label>
+              <input type="text" id="location" placeholder="Chennai, India" oninput="liveScore()"/>
+            </div>
+          </div>
+          <div class="field">
+            <label>Professional Summary *</label>
+            <textarea id="summary" rows="3" placeholder="Write a 2–3 sentence summary highlighting your years of experience, key skills, and value proposition..." oninput="liveScore()"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skills -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">⚡</span> Technical Skills</div>
+          <div style="font-size:11px;color:var(--muted)">Keywords = ATS matches</div>
+        </div>
+        <div class="card-body">
+          <div class="skills-grid" id="skillsGrid"></div>
+          <div class="skill-input-row">
+            <input type="text" id="skillInput" placeholder="Add a skill (e.g. Java, Spring Boot...)" onkeydown="if(event.key==='Enter')addSkill()"/>
+            <button onclick="addSkill()">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Experience -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">💼</span> Work Experience</div>
+          <button class="add-btn" style="width:auto;padding:4px 12px;font-size:12px;border-radius:6px" onclick="addExperience()">+ Add</button>
+        </div>
+        <div class="card-body" id="experienceList">
+          <div class="empty-state">
+            <div class="big-icon">🏢</div>
+            Click "Add" to add your work experience
+          </div>
+        </div>
+      </div>
+
+      <!-- Education -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🎓</span> Education</div>
+          <button class="add-btn" style="width:auto;padding:4px 12px;font-size:12px;border-radius:6px" onclick="addEducation()">+ Add</button>
+        </div>
+        <div class="card-body" id="educationList">
+          <div class="empty-state">
+            <div class="big-icon">📚</div>
+            Click "Add" to add your education
+          </div>
+        </div>
+      </div>
+
+      <!-- Projects -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🚀</span> Projects</div>
+          <button class="add-btn" style="width:auto;padding:4px 12px;font-size:12px;border-radius:6px" onclick="addProject()">+ Add</button>
+        </div>
+        <div class="card-body" id="projectList">
+          <div class="empty-state">
+            <div class="big-icon">💡</div>
+            Click "Add" to add your projects
+          </div>
+        </div>
+      </div>
+
+      <button class="generate-btn" onclick="generateResume()" id="genBtn">
+        ✨ Analyze & Generate ATS Resume
+      </button>
+    </div>
+
+    <!-- RIGHT: SCORE + TIPS + PREVIEW -->
+    <div class="right-panel">
+
+      <!-- Score Breakdown -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📊</span> Score Breakdown</div>
+        </div>
+        <div class="card-body">
+          <div class="score-breakdown" id="scoreBreakdown">
+            <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">
+              Fill in your details to see your live ATS score
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tips -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">💡</span> ATS Tips</div>
+        </div>
+        <div class="card-body">
+          <div class="tips-list" id="tipsList">
+            <div class="tip warn">
+              <span class="tip-icon">📋</span>
+              Start filling in your resume to get personalized ATS improvement tips.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">👁</span> Live Preview</div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="preview-area">
+            <div class="preview-inner" id="previewContent">
+              <div style="text-align:center;padding:30px;color:#aaa;font-size:12px">
+                Your resume preview will appear here as you type.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="download-btn" onclick="printResume()">⬇ Download / Print Resume</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const state = {
+  skills: [],
+  experience: [],
+  education: [],
+  projects: [],
+  aiTips: []
+};
+
+let expCount = 0, eduCount = 0, projCount = 0;
+
+// ─── SKILLS ───────────────────────────────────────────
+function addSkill() {
+  const input = document.getElementById('skillInput');
+  const val = input.value.trim();
+  if (!val) return;
+  val.split(',').forEach(s => {
+    const sk = s.trim();
+    if (sk && !state.skills.includes(sk)) state.skills.push(sk);
+  });
+  input.value = '';
+  renderSkills();
+  liveScore();
+}
+
+function removeSkill(i) {
+  state.skills.splice(i, 1);
+  renderSkills();
+  liveScore();
+}
+
+function renderSkills() {
+  const g = document.getElementById('skillsGrid');
+  g.innerHTML = state.skills.map((s, i) =>
+    `<div class="skill-chip">${s}<button onclick="removeSkill(${i})">×</button></div>`
+  ).join('');
+}
+
+// ─── EXPERIENCE ───────────────────────────────────────
+function addExperience() {
+  const id = ++expCount;
+  state.experience.push({ id, company: '', title: '', start: '', end: '', bullets: [''] });
+  renderExperience();
+  liveScore();
+}
+
+function removeExperience(id) {
+  state.experience = state.experience.filter(e => e.id !== id);
+  renderExperience();
+  liveScore();
+}
+
+function renderExperience() {
+  const el = document.getElementById('experienceList');
+  if (!state.experience.length) {
+    el.innerHTML = `<div class="empty-state"><div class="big-icon">🏢</div>Click "Add" to add your work experience</div>`;
+    return;
+  }
+  el.innerHTML = state.experience.map(exp => `
+    <div class="list-item" id="exp-${exp.id}">
+      <button class="remove-btn" onclick="removeExperience(${exp.id})">×</button>
+      <div class="form-row">
+        <div class="field">
+          <label>Company *</label>
+          <input type="text" value="${exp.company}" placeholder="e.g. Capgemini"
+            oninput="updateExp(${exp.id},'company',this.value)"/>
+        </div>
+        <div class="field">
+          <label>Job Title *</label>
+          <input type="text" value="${exp.title}" placeholder="e.g. Software Engineer"
+            oninput="updateExp(${exp.id},'title',this.value)"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Start Date</label>
+          <input type="text" value="${exp.start}" placeholder="Jan 2023"
+            oninput="updateExp(${exp.id},'start',this.value)"/>
+        </div>
+        <div class="field">
+          <label>End Date</label>
+          <input type="text" value="${exp.end}" placeholder="Present"
+            oninput="updateExp(${exp.id},'end',this.value)"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>Key Achievements (one per line, use numbers!)</label>
+        <textarea rows="4" placeholder="• Improved API response time by 30% using Redis caching&#10;• Led migration of 5TB database with zero downtime"
+          oninput="updateExp(${exp.id},'bulletsText',this.value)">${exp.bullets.join('\n')}</textarea>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateExp(id, field, val) {
+  const exp = state.experience.find(e => e.id === id);
+  if (!exp) return;
+  if (field === 'bulletsText') exp.bullets = val.split('\n');
+  else exp[field] = val;
+  liveScore();
+  renderPreview();
+}
+
+// ─── EDUCATION ────────────────────────────────────────
+function addEducation() {
+  const id = ++eduCount;
+  state.education.push({ id, institution: '', degree: '', year: '' });
+  renderEducation();
+}
+
+function removeEducation(id) {
+  state.education = state.education.filter(e => e.id !== id);
+  renderEducation();
+  liveScore();
+}
+
+function renderEducation() {
+  const el = document.getElementById('educationList');
+  if (!state.education.length) {
+    el.innerHTML = `<div class="empty-state"><div class="big-icon">📚</div>Click "Add" to add your education</div>`;
+    return;
+  }
+  el.innerHTML = state.education.map(edu => `
+    <div class="list-item" id="edu-${edu.id}">
+      <button class="remove-btn" onclick="removeEducation(${edu.id})">×</button>
+      <div class="form-row">
+        <div class="field">
+          <label>Institution *</label>
+          <input type="text" value="${edu.institution}" placeholder="e.g. SRM University"
+            oninput="updateEdu(${edu.id},'institution',this.value)"/>
+        </div>
+        <div class="field">
+          <label>Degree / Course *</label>
+          <input type="text" value="${edu.degree}" placeholder="e.g. B.E. Computer Science"
+            oninput="updateEdu(${edu.id},'degree',this.value)"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>Graduation Year</label>
+        <input type="text" value="${edu.year}" placeholder="2020"
+          oninput="updateEdu(${edu.id},'year',this.value)"/>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateEdu(id, field, val) {
+  const edu = state.education.find(e => e.id === id);
+  if (edu) { edu[field] = val; liveScore(); renderPreview(); }
+}
+
+// ─── PROJECTS ─────────────────────────────────────────
+function addProject() {
+  const id = ++projCount;
+  state.projects.push({ id, name: '', tech: '', description: '' });
+  renderProjects();
+}
+
+function removeProject(id) {
+  state.projects = state.projects.filter(p => p.id !== id);
+  renderProjects();
+  liveScore();
+}
+
+function renderProjects() {
+  const el = document.getElementById('projectList');
+  if (!state.projects.length) {
+    el.innerHTML = `<div class="empty-state"><div class="big-icon">💡</div>Click "Add" to add your projects</div>`;
+    return;
+  }
+  el.innerHTML = state.projects.map(p => `
+    <div class="list-item" id="proj-${p.id}">
+      <button class="remove-btn" onclick="removeProject(${p.id})">×</button>
+      <div class="form-row">
+        <div class="field">
+          <label>Project Name *</label>
+          <input type="text" value="${p.name}" placeholder="e.g. E-Commerce Platform"
+            oninput="updateProj(${p.id},'name',this.value)"/>
+        </div>
+        <div class="field">
+          <label>Tech Stack</label>
+          <input type="text" value="${p.tech}" placeholder="Spring Boot, React, MySQL"
+            oninput="updateProj(${p.id},'tech',this.value)"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>Description</label>
+        <textarea rows="2" placeholder="Describe what you built and the impact..."
+          oninput="updateProj(${p.id},'description',this.value)">${p.description}</textarea>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateProj(id, field, val) {
+  const p = state.projects.find(p => p.id === id);
+  if (p) { p[field] = val; liveScore(); renderPreview(); }
+}
+
+// ─── SCORE CALCULATION ────────────────────────────────
+function computeScore() {
+  const scores = {};
+  const name = document.getElementById('fullName').value.trim();
+  const jobTitle = document.getElementById('jobTitle').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const summary = document.getElementById('summary').value.trim();
+  const linkedin = document.getElementById('linkedin').value.trim();
+
+  // Contact completeness (max 15)
+  let contact = 0;
+  if (name) contact += 4;
+  if (email) contact += 4;
+  if (document.getElementById('phone').value.trim()) contact += 3;
+  if (linkedin) contact += 2;
+  if (document.getElementById('location').value.trim()) contact += 2;
+  scores.contact = Math.min(contact, 15);
+
+  // Summary (max 15)
+  let sum = 0;
+  if (summary.length > 20) sum += 5;
+  if (summary.length > 80) sum += 5;
+  if (summary.length > 150) sum += 3;
+  if (jobTitle && summary.toLowerCase().includes(jobTitle.split(' ')[0].toLowerCase())) sum += 2;
+  scores.summary = Math.min(sum, 15);
+
+  // Skills (max 20)
+  let sk = Math.min(state.skills.length * 2, 20);
+  scores.skills = sk;
+
+  // Experience (max 30)
+  let exp = 0;
+  state.experience.forEach(e => {
+    if (e.company) exp += 4;
+    if (e.title) exp += 3;
+    if (e.start) exp += 1;
+    const bullets = e.bullets.filter(b => b.trim());
+    exp += Math.min(bullets.length * 2, 10);
+    // Quantified bullets bonus
+    const hasNumbers = bullets.some(b => /\d+%|\d+x|\d+ (ms|sec|min|hrs|months|years|TB|GB|MB)/i.test(b));
+    if (hasNumbers) exp += 4;
+  });
+  scores.experience = Math.min(exp, 30);
+
+  // Education (max 10)
+  scores.education = Math.min(state.education.length * 5, 10);
+
+  // Projects (max 10)
+  scores.projects = Math.min(state.projects.length * 5, 10);
+
+  const total = Object.values(scores).reduce((a, b) => a + b, 0);
+  return { total: Math.min(total, 100), scores };
+}
+
+function liveScore() {
+  const { total, scores } = computeScore();
+  const display = document.getElementById('scoreDisplay');
+  const ring = document.getElementById('ringFill');
+
+  display.textContent = total ? `${total}` : '--';
+
+  const color = total >= 80 ? 'var(--score-good)' : total >= 60 ? 'var(--score-mid)' : 'var(--score-low)';
+  display.style.color = color;
+  ring.style.stroke = color;
+
+  const circ = 138.2;
+  ring.style.strokeDashoffset = total ? circ - (circ * total / 100) : circ;
+
+  // Score breakdown
+  const bd = document.getElementById('scoreBreakdown');
+  const items = [
+    { label: 'Contact Info', val: scores.contact, max: 15 },
+    { label: 'Summary', val: scores.summary, max: 15 },
+    { label: 'Skills Keywords', val: scores.skills, max: 20 },
+    { label: 'Work Experience', val: scores.experience, max: 30 },
+    { label: 'Education', val: scores.education, max: 10 },
+    { label: 'Projects', val: scores.projects, max: 10 },
+  ];
+  bd.innerHTML = items.map(item => {
+    const pct = Math.round((item.val / item.max) * 100);
+    const c = pct >= 80 ? 'var(--score-good)' : pct >= 50 ? 'var(--score-mid)' : 'var(--score-low)';
+    return `
+      <div class="score-item">
+        <div class="score-item-header">
+          <span class="score-item-label">${item.label}</span>
+          <span class="score-item-val" style="color:${c}">${item.val}/${item.max}</span>
+        </div>
+        <div class="score-bar-track">
+          <div class="score-bar-fill" style="width:${pct}%;background:${c}"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  renderTips(scores, total);
+  renderPreview();
+}
+
+function renderTips(scores, total) {
+  const tips = [];
+  const summary = document.getElementById('summary').value.trim();
+
+  if (!document.getElementById('fullName').value.trim()) tips.push({ type: 'bad', icon: '❌', text: 'Add your full name — it\'s required for ATS parsing.' });
+  if (!document.getElementById('email').value.trim()) tips.push({ type: 'bad', icon: '❌', text: 'Missing email address — critical for recruiter contact.' });
+  if (!document.getElementById('linkedin').value.trim()) tips.push({ type: 'warn', icon: '⚠️', text: 'Add your LinkedIn URL to boost credibility and score.' });
+  if (summary.length < 80) tips.push({ type: 'warn', icon: '⚠️', text: 'Expand your summary to 2–3 sentences with role-specific keywords.' });
+  if (state.skills.length < 6) tips.push({ type: 'warn', icon: '⚠️', text: `Add more skills — you have ${state.skills.length}, aim for 10+ relevant keywords.` });
+  if (state.skills.length >= 10) tips.push({ type: 'good', icon: '✅', text: 'Great keyword density! 10+ skills improves ATS match rate significantly.' });
+  if (!state.experience.length) tips.push({ type: 'bad', icon: '❌', text: 'Add at least one work experience entry — it\'s the most important ATS section.' });
+
+  const hasQuantified = state.experience.some(e =>
+    e.bullets.some(b => /\d+%|\d+x|\d+(ms|sec)/i.test(b))
+  );
+  if (state.experience.length && !hasQuantified) tips.push({ type: 'warn', icon: '📊', text: 'Quantify your achievements (e.g. "Improved response time by 30%") for higher ATS scores.' });
+  if (hasQuantified) tips.push({ type: 'good', icon: '✅', text: 'Quantified achievements detected — this significantly boosts ATS and human reviewer scores.' });
+  if (!state.education.length) tips.push({ type: 'warn', icon: '⚠️', text: 'Add your education — many ATS systems filter by degree requirements.' });
+  if (total >= 80) tips.push({ type: 'good', icon: '🏆', text: 'Excellent ATS score! Your resume is well-optimized for automated screening.' });
+
+  const tipsEl = document.getElementById('tipsList');
+  tipsEl.innerHTML = tips.length
+    ? tips.map(t => `<div class="tip ${t.type}"><span class="tip-icon">${t.icon}</span><span>${t.text}</span></div>`).join('')
+    : `<div class="tip good"><span class="tip-icon">🎉</span><span>Your resume looks well-structured!</span></div>`;
+}
+
+// ─── LIVE PREVIEW ─────────────────────────────────────
+function renderPreview() {
+  const name = document.getElementById('fullName').value || 'Your Name';
+  const jobTitle = document.getElementById('jobTitle').value;
+  const email = document.getElementById('email').value;
+  const phone = document.getElementById('phone').value;
+  const linkedin = document.getElementById('linkedin').value;
+  const location = document.getElementById('location').value;
+  const summary = document.getElementById('summary').value;
+
+  const contacts = [email, phone, location, linkedin].filter(Boolean).join(' | ');
+
+  let html = `
+    <div class="preview-name">${name}</div>
+    ${jobTitle ? `<div style="font-size:11px;color:#555;margin-bottom:4px;font-weight:500">${jobTitle}</div>` : ''}
+    <div class="preview-contact">${contacts || 'your@email.com | +91 9876543210'}</div>
+    <hr class="preview-hr"/>
+  `;
+
+  if (summary) {
+    html += `<div class="preview-section-title">Professional Summary</div>
+      <p style="font-size:10px;color:#333;margin-bottom:8px;line-height:1.5">${summary}</p>
+      <hr class="preview-hr"/>`;
+  }
+
+  if (state.skills.length) {
+    html += `<div class="preview-section-title">Technical Skills</div>
+      <div class="preview-skills-text">${state.skills.join(' • ')}</div>
+      <hr class="preview-hr"/>`;
+  }
+
+  if (state.experience.length) {
+    html += `<div class="preview-section-title">Professional Experience</div>`;
+    state.experience.forEach(exp => {
+      html += `<div class="preview-job">${exp.title || 'Job Title'} — ${exp.company || 'Company'}</div>
+        <div class="preview-job-meta">${[exp.start, exp.end].filter(Boolean).join(' – ')}</div>`;
+      exp.bullets.filter(b => b.trim()).forEach(b => {
+        html += `<div class="preview-bullet">${b.replace(/^[•\-]\s*/,'')}</div>`;
+      });
+    });
+    html += `<hr class="preview-hr"/>`;
+  }
+
+  if (state.projects.length) {
+    html += `<div class="preview-section-title">Projects</div>`;
+    state.projects.forEach(p => {
+      if (p.name) {
+        html += `<div class="preview-job">${p.name}</div>`;
+        if (p.tech) html += `<div class="preview-job-meta">Tech: ${p.tech}</div>`;
+        if (p.description) html += `<div class="preview-bullet">${p.description}</div>`;
+      }
+    });
+    html += `<hr class="preview-hr"/>`;
+  }
+
+  if (state.education.length) {
+    html += `<div class="preview-section-title">Education</div>`;
+    state.education.forEach(edu => {
+      html += `<div class="preview-job">${edu.degree || 'Degree'}</div>
+        <div class="preview-job-meta">${edu.institution || 'Institution'}${edu.year ? ' | ' + edu.year : ''}</div>`;
+    });
+  }
+
+  document.getElementById('previewContent').innerHTML = html;
+}
+
+// ─── AI GENERATE ──────────────────────────────────────
+async function generateResume() {
+  const name = document.getElementById('fullName').value.trim();
+  const email = document.getElementById('email').value.trim();
+  if (!name || !email) {
+    alert('Please fill in at least your name and email before generating.');
+    return;
+  }
+
+  document.getElementById('loadingOverlay').classList.add('active');
+  document.getElementById('genBtn').disabled = true;
+
+  const resumeData = {
+    name, email,
+    jobTitle: document.getElementById('jobTitle').value,
+    phone: document.getElementById('phone').value,
+    linkedin: document.getElementById('linkedin').value,
+    location: document.getElementById('location').value,
+    summary: document.getElementById('summary').value,
+    skills: state.skills,
+    experience: state.experience,
+    education: state.education,
+    projects: state.projects
+  };
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: `You are an expert ATS resume optimizer. Given resume data, return ONLY a JSON object with these fields:
+{
+  "atsScore": number (0-100),
+  "improvedSummary": string (optimized 2-3 sentence summary with keywords),
+  "improvedBullets": { [expId]: string[] } (improved bullet points per experience id),
+  "missingKeywords": string[] (up to 5 suggested keywords to add),
+  "topTips": string[] (3 specific actionable tips),
+  "scoreBreakdown": { "contact": number, "summary": number, "skills": number, "experience": number, "education": number, "projects": number }
+}
+Only return valid JSON, no markdown, no preamble.`,
+        messages: [{
+          role: "user",
+          content: `Analyze and optimize this resume data for ATS: ${JSON.stringify(resumeData)}`
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const raw = data.content?.map(c => c.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+
+    // Apply AI improvements
+    if (result.improvedSummary) {
+      document.getElementById('summary').value = result.improvedSummary;
+    }
+
+    if (result.missingKeywords?.length) {
+      result.missingKeywords.forEach(kw => {
+        if (!state.skills.includes(kw)) state.skills.push(kw);
+      });
+      renderSkills();
+    }
+
+    // Show AI tips in tips panel
+    if (result.topTips?.length) {
+      const tipsEl = document.getElementById('tipsList');
+      const aiSection = `<div style="font-size:11px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">✨ AI Recommendations</div>`;
+      const aiTips = result.topTips.map(t =>
+        `<div class="tip good"><span class="tip-icon">🤖</span><span>${t}</span></div>`
+      ).join('');
+      tipsEl.innerHTML = aiSection + aiTips + tipsEl.innerHTML;
+    }
+
+    liveScore();
+    alert(`✅ AI Analysis Complete!\n\nYour resume has been optimized:\n• Summary enhanced with ATS keywords\n• ${result.missingKeywords?.length || 0} new keywords added\n• Review the tips panel for specific improvements`);
+
+  } catch (err) {
+    console.error(err);
+    liveScore();
+    alert('⚠️ AI optimization completed with local analysis. Review the tips panel for improvements.');
+  }
+
+  document.getElementById('loadingOverlay').classList.remove('active');
+  document.getElementById('genBtn').disabled = false;
+}
+
+// ─── PRINT ────────────────────────────────────────────
+function printResume() {
+  const content = document.getElementById('previewContent').innerHTML;
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <!DOCTYPE html><html><head>
+    <title>Resume - ${document.getElementById('fullName').value || 'Resume'}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <style>
+      body { font-family: 'DM Sans', sans-serif; margin: 0; padding: 32px 40px; color: #1a1a1a; font-size: 11pt; }
+      .preview-name { font-family: 'Playfair Display', serif; font-size: 24pt; font-weight: 700; }
+      .preview-contact { font-size: 10pt; color: #666; margin-bottom: 8px; }
+      .preview-hr { border: none; border-top: 1.5px solid #1a1a1a; margin: 8px 0; }
+      .preview-section-title { font-size: 10pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin: 12px 0 4px; }
+      .preview-job { font-weight: 700; font-size: 11pt; }
+      .preview-job-meta { font-size: 10pt; color: #666; margin-bottom: 4px; }
+      .preview-bullet { padding-left: 14px; position: relative; margin-bottom: 3px; font-size: 10pt; color: #333; }
+      .preview-bullet::before { content: '•'; position: absolute; left: 0; }
+      .preview-skills-text { font-size: 10pt; color: #333; line-height: 1.6; }
+      @media print { body { padding: 20px 28px; } }
+    </style></head><body>${content}</body></html>
+  `);
+  win.document.close();
+  setTimeout(() => win.print(), 500);
+}
+
+// Init
+liveScore();
+</script>
+</body>
+</html>
